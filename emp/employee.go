@@ -32,7 +32,6 @@ func GetEmployeeData(db *sql.DB) ([]Employee, error) {
 	}
 	defer rows.Close()
 	var employees []Employee
-	// 10 records
 	for rows.Next() {
 		var e Employee
 		err = rows.Scan(&e.ID, &e.Name, &e.PhoneNo, &e.Dept.DeptID, &e.Dept.DeptName)
@@ -102,7 +101,9 @@ func PostEmployeeData(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	emp.ID = nUUID
-	json.NewEncoder(w).Encode(emp)
+	respBody, err := json.Marshal(emp)
+	w.Write(respBody)
+	//json.NewEncoder(w).Encode(emp)
 }
 func PostDepartmentData(w http.ResponseWriter, r *http.Request) {
 	var dep Department

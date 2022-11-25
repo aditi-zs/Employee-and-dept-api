@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -56,6 +57,54 @@ func TestGetEmpData(t *testing.T) {
 		assert.Equal(t, tc.statusCode, resRec.Code)
 		assert.Equal(t, tc.expRes, val)
 	}
+}
+func TestGetOneEmpData(t *testing.T) {
+	DB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an erroe '#{err}' was not expected when opening a stub database connection")
+	}
+	defer DB.Close()
+
+	row := sqlmock.NewRows([]string{"id", "name", "phoneNo", "dept_id", "dept_name"}).
+		AddRow("71bbdbb9-6bde-11ed-aaff-64bc589051b4", "Monika Jaiswal", "6377873927", "1fa46d13-6a50-11ed-90d1-64bc589051b4", "HR Department")
+	mock.ExpectQuery("Select e.ID,e.Name,e.PhoneNo,e.DeptID,d.Name from emp e join dept d on e.DeptID=d.DeptID WHERE e.id=?").WithArgs("71bbdbb9-6bde-11ed-aaff-64bc589051b4").WillReturnRows(row)
+
+	tests := []struct {
+		description string
+		input       string
+		expRes      Employee
+		statusCode  int
+	}{
+		{"All entries are present",
+			"",
+			Employee{
+				"71bbdbb9-6bde-11ed-aaff-64bc589051b4", "Monika Jaiswal",
+				"6377873927",
+				Department{
+					"1fa46d13-6a50-11ed-90d1-64bc589051b4",
+					"HR Department",
+				},
+			},
+			200,
+		},
+	}
+	for _, tc := range tests {
+		req, err := http.NewRequest("GET", "/emp/{id}", nil)
+		if err != nil {
+			t.Errorf(err.Error()) //err.Error() will return a string
+		}
+		resRec := httptest.NewRecorder()
+
+		req = mux.SetURLVars(req, map[string]string{"id": tc.expRes.ID})
+		GetOneEmpData(resRec, req)
+
+		var val Employee
+		_ = json.Unmarshal(resRec.Body.Bytes(), &val) //json to go
+
+		assert.Equal(t, tc.statusCode, resRec.Code)
+		assert.Equal(t, tc.expRes, val)
+	}
+
 }
 func TestGetDepData(t *testing.T) {
 	DB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
