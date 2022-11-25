@@ -47,7 +47,7 @@ func main() {
 	//fmt.Println(employees)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/emp", emp.GetEmployeeData).Methods("GET")
+	router.HandleFunc("/emp", emp.GetEmpData).Methods("GET")
 	router.HandleFunc("/emp/{id}", emp.GetOneEmpData).Methods("GET")
 	//router.HandleFunc("/emp", PostEmployeeData).Methods("POST")
 	fmt.Println(("server at port 8000"))

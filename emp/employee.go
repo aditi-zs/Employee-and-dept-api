@@ -11,7 +11,7 @@ import (
 var DB *sql.DB
 
 type Department struct {
-	DeptID   string `json:"dept_id"`
+	DeptID   string `json:"dept"`
 	DeptName string `json:"dept_name"`
 }
 
@@ -24,9 +24,8 @@ type Employee struct {
 	//DeptID  Department `json:"deptID"`
 }
 
-func GetEmployeeData(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	rows, err := DB.Query("Select e.ID,e.Name,e.PhoneNo,e.DeptID,d.Name from emp e join dept d on e.DeptID=d.DeptID	")
+func GetEmployeeData(db *sql.DB) ([]Employee, error) {
+	rows, err := db.Query("Select e.ID,e.Name,e.PhoneNo,e.DeptID,d.Name from emp e join dept d on e.DeptID=d.DeptID	")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,36 +39,35 @@ func GetEmployeeData(w http.ResponseWriter, r *http.Request) {
 		var e Employee
 		err = rows.Scan(&e.ID, &e.Name, &e.PhoneNo, &e.Dept.DeptID, &e.Dept.DeptName)
 		if err != nil {
-			panic(err.Error())
+			return nil, err
 		}
 
 		employees = append(employees, e)
 	}
-	w.WriteHeader(http.StatusOK)
+
 	// to be discussed finally
 	err = rows.Err()
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	respBody, _ := json.Marshal(employees)
-	w.Write(respBody)
-	//return employees, nil
+	//respBody,_:=json.Marshal(employees)
+	//w.Write(respBody)
+	return employees, nil
 }
-
-//	func GetEmpData(w http.ResponseWriter, r *http.Request) {
-//		val, err := GetEmployeeData(DB)
-//		if err != nil {
-//			log.Println(err)
-//		}
-//		w.Header().Set("Content-Type", "application/json")
-//		w.WriteHeader(http.StatusOK)
-//		err = json.NewEncoder(w).Encode(val)
-//		if err != nil {
-//			log.Println(err)
-//		}
-//		//respBody, _ := json.Marshal(val)
-//		//w.Write(respBody)
-//	}
+func GetEmpData(w http.ResponseWriter, r *http.Request) {
+	val, err := GetEmployeeData(DB)
+	if err != nil {
+		log.Println(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(val)
+	if err != nil {
+		log.Println(err)
+	}
+	//respBody, _ := json.Marshal(val)
+	//w.Write(respBody)
+}
 func GetOneEmployeeData(db *sql.DB, id string) (Employee, error) {
 	var e Employee
 	row := db.QueryRow("Select e.ID,e.Name,e.PhoneNo,e.DeptID,d.Name from emp e join dept d on e.DeptID=d.DeptID WHERE id=?", id)
