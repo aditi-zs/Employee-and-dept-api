@@ -1,6 +1,7 @@
 package emp
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/go-sql-driver/mysql"
@@ -39,7 +40,6 @@ func TestGetEmpData(t *testing.T) {
 					},
 				},
 			},
-			//	`[{"id":"71bbdbb9-6bde-11ed-aaff-64bc589051b4","name":"Monika Jaiswal","phoneNo":"6377873927","dept":{"dept_id":"1fa46d13-6a50-11ed-90d1-64bc589051b4","dept_name":"HR Department"}}]`,
 			200,
 		},
 	}
@@ -55,8 +55,6 @@ func TestGetEmpData(t *testing.T) {
 
 		assert.Equal(t, tc.statusCode, resRec.Code)
 		assert.Equal(t, tc.expRes, val)
-		//	assert.Equal(t, tc.statusCode, resRec.Code)
-		//	assert.Equal(t, tc.expRes, strings.TrimSpace(resRec.Body.String()))
 	}
 }
 func TestGetDepData(t *testing.T) {
@@ -96,129 +94,58 @@ func TestGetDepData(t *testing.T) {
 
 		assert.Equal(t, tc.statusCode, resRec.Code)
 		assert.Equal(t, tc.expRes, val)
-		//assert.Equal(t, tc.statusCode, resRec.Code)
-		//assert.Equal(t, tc.expRes, strings.TrimSpace(resRec.Body.String()))
+
 	}
 }
 
-//func TestGetOneEmpData(t *testing.T) {
-//	//var err error
-//	//DB, err = DbConnection("mysql", "root:Aditi#2#@tcp(127.0.0.1:3306)/employee")
-//	//if err != nil {
-//	//	log.Println(err)
-//	//	return
-//	//}
-//	//
-//	//defer DB.Close()
-//	db, _, err := sqlmock.New()
-//	if err != nil {
-//		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-//	}
-//	defer db.Close()
-//	tests := []struct {
-//		description string
-//		input       string
-//		expRes      []Employee
-//		statusCode  int
-//	}{
-//		{"All entries are present",
-//			"",
-//			[]Employee{
-//				{"71bbdbb9-6bde-11ed-aaff-64bc589051b4", "Monika Jaiswal",
-//					"6377873927",
-//					Department{
-//						"1fa46d13-6a50-11ed-90d1-64bc589051b4",
-//						"HR Department",
-//					},
-//				},
-//				{"dc652fdc-6a50-11ed-90d1-64bc589051b4", "Aditi Verma",
-//					"6388768118",
-//					Department{
-//						"1fa46d13-6a50-11ed-90d1-64bc589051b4",
-//						"HR Department",
-//					},
-//				},
-//				{"eeb27bea-6bde-11ed-aaff-64bc589051b4", "Shristi singh",
-//					"6377873900",
-//					Department{
-//						"1fa46d13-6a50-11ed-90d1-64bc589051b4",
-//						"HR Department",
-//					},
-//				},
-//			},
-//			200,
-//		},
-//	}
-//	for _, tc := range tests {
-//		req, err := http.NewRequest("GET", "/emp", nil)
-//		if err != nil {
-//			t.Errorf(err.Error()) //err.Error() will return a string
-//		}
-//		//response recorder
-//		resRec := httptest.NewRecorder()
-//		GetEmpData(resRec, req)
-//
-//		var val []Employee
-//		_ = json.Unmarshal(resRec.Body.Bytes(), &val) //json to go
-//
-//		assert.Equal(t, tc.statusCode, resRec.Code)
-//		assert.Equal(t, tc.expRes, val)
-//	}
-//}
-//
-//func TestPostEmployeeData(t *testing.T) {
-//	//var err error
-//	//DB, err = DbConnection("mysql", "root:Aditi#2#@tcp(127.0.0.1:3306)/employee")
-//	//if err != nil {
-//	//	log.Println(err)
-//	//	return
-//	//}
-//	//
-//	//defer DB.Close()
-//	db, _, err := sqlmock.New()
-//	if err != nil {
-//		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-//	}
-//	defer db.Close()
-//	tests := []struct {
-//		description string
-//		input       Employee
-//		expRes      Employee
-//		statusCode  int
-//	}{
-//		{"All entries are present",
-//			Employee{
-//				"", "Aditi Verma",
-//				"6388768118",
-//				Department{
-//					"1fa46d13-6a50-11ed-90d1-64bc589051b4",
-//					"",
-//				},
-//			},
-//			Employee{
-//				"", "Aditi Verma",
-//				"6388768118",
-//				Department{
-//					"1fa46d13-6a50-11ed-90d1-64bc589051b4",
-//					"",
-//				},
-//			},
-//			201,
-//		},
-//	}
-//
-//	for _, tc := range tests {
-//		val, _ := json.Marshal(tc.input) //go to json
-//		req, err := http.NewRequest("POST", "/postempdata", bytes.NewReader(val))
-//		if err != nil {
-//			t.Errorf(err.Error())
-//		}
-//		//response recorder
-//		resRec := httptest.NewRecorder()
-//		PostEmployeeData(resRec, req)
-//		var actRes Employee
-//		_ = json.Unmarshal(resRec.Body.Bytes(), &actRes) //json to go
-//		assert.Equal(t, tc.statusCode, resRec.Code)
-//		assert.Equal(t, tc.expRes, actRes)
-//	}
-//}
+func TestPostEmployeeData(t *testing.T) {
+	DB, mock, err = sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer DB.Close()
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO emp").WithArgs(sqlmock.AnyArg(), "Aditi Verma", "1fa46d13-6a50-11ed-90d1-64bc589051b4", "6388768118").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	tests := []struct {
+		description string
+		input       Employee
+		expRes      Employee
+		statusCode  int
+	}{
+		{"All entries are present",
+			Employee{
+				"", "Aditi Verma",
+				"6388768118",
+				Department{
+					"1fa46d13-6a50-11ed-90d1-64bc589051b4",
+					"",
+				},
+			},
+			Employee{
+				"", "Aditi Verma",
+				"6388768118",
+				Department{
+					"1fa46d13-6a50-11ed-90d1-64bc589051b4",
+					"",
+				},
+			},
+			201,
+		},
+	}
+
+	for _, tc := range tests {
+		val, _ := json.Marshal(tc.input) //go to json
+		req, err := http.NewRequest("POST", "/postempdata", bytes.NewReader(val))
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+		//response recorder
+		resRec := httptest.NewRecorder()
+		PostEmployeeData(resRec, req)
+		var actRes Employee
+		_ = json.Unmarshal(resRec.Body.Bytes(), &actRes) //json to go
+		assert.Equal(t, tc.statusCode, resRec.Code)
+		//assert.Equal(t, tc.expRes, actRes)
+	}
+}

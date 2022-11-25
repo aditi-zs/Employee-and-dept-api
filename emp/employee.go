@@ -3,10 +3,12 @@ package emp
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 var DB *sql.DB
@@ -91,12 +93,16 @@ func PostEmployeeData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	req, _ := ioutil.ReadAll(r.Body)
 	_ = json.Unmarshal(req, &emp)
-	_, err := DB.Exec("insert into emp values (uuid(),?,?,?)", emp.Name, emp.Dept.DeptID, emp.PhoneNo)
+	newUUID := uuid.New()
+	//newUUID, err := exec.Command("uuidgen").Output()
+	nUUID := strings.TrimSpace(newUUID.String())
+	_, err := DB.Exec("insert into emp values (?,?,?,?)", nUUID, emp.Name, emp.Dept.DeptID, emp.PhoneNo)
 	if err != nil {
 		log.Println(err)
 	}
 	w.WriteHeader(http.StatusCreated)
-
+	emp.ID = nUUID
+	json.NewEncoder(w).Encode(emp)
 }
 func PostDepartmentData(w http.ResponseWriter, r *http.Request) {
 	var dep Department

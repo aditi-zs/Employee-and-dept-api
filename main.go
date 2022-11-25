@@ -20,7 +20,7 @@ func main() {
 	}
 
 	defer emp.DB.Close()
-
+	//h:= emp.Newhandle(emp.DB)
 	//err = emp.DB.Ping()
 	//if err != nil {
 	//	log.Println(err)
