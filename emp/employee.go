@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -11,17 +12,15 @@ import (
 var DB *sql.DB
 
 type Department struct {
-	DeptID   string `json:"dept"`
+	DeptID   string `json:"dept_id"`
 	DeptName string `json:"dept_name"`
 }
 
 type Employee struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-
+	ID      string     `json:"id"`
+	Name    string     `json:"name"`
 	PhoneNo string     `json:"phoneNo"`
-	Dept    Department `json:"deptId"`
-	//DeptID  Department `json:"deptID"`
+	Dept    Department `json:"dept"`
 }
 
 func GetEmployeeData(db *sql.DB) ([]Employee, error) {
@@ -29,11 +28,8 @@ func GetEmployeeData(db *sql.DB) ([]Employee, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer rows.Close()
-
 	var employees []Employee
-
 	// 10 records
 	for rows.Next() {
 		var e Employee
@@ -44,8 +40,6 @@ func GetEmployeeData(db *sql.DB) ([]Employee, error) {
 
 		employees = append(employees, e)
 	}
-
-	// to be discussed finally
 	err = rows.Err()
 	if err != nil {
 		return nil, err
@@ -54,6 +48,7 @@ func GetEmployeeData(db *sql.DB) ([]Employee, error) {
 	//w.Write(respBody)
 	return employees, nil
 }
+
 func GetEmpData(w http.ResponseWriter, r *http.Request) {
 	val, err := GetEmployeeData(DB)
 	if err != nil {
@@ -61,22 +56,19 @@ func GetEmpData(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(val)
+	respBody, err := json.Marshal(val)
+	w.Write(respBody)
 	if err != nil {
 		log.Println(err)
 	}
-	//respBody, _ := json.Marshal(val)
-	//w.Write(respBody)
 }
 func GetOneEmployeeData(db *sql.DB, id string) (Employee, error) {
 	var e Employee
-	row := db.QueryRow("Select e.ID,e.Name,e.PhoneNo,e.DeptID,d.Name from emp e join dept d on e.DeptID=d.DeptID WHERE id=?", id)
-
+	row := db.QueryRow("Select e.ID,e.Name,e.PhoneNo,e.DeptID,d.Name from emp e join dept d on e.DeptID=d.DeptID WHERE e.id=?", id)
 	err := row.Scan(&e.ID, &e.Name, &e.PhoneNo, &e.Dept.DeptID, &e.Dept.DeptName)
 	if err != nil {
 		return Employee{}, err
 	}
-
 	return e, nil
 }
 
@@ -87,15 +79,68 @@ func GetOneEmpData(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	w.Header().Set("Content-Type", "application/json")
-
-	//for _, val := range employees {
-	//	if (val.ID) == empID {
-	//		json.NewEncoder(w).Encode(val)
-	//
-	//	}
-	//}
 	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(val)
+	respBody, err := json.Marshal(val)
+	w.Write(respBody)
+	if err != nil {
+		log.Println(err)
+	}
+}
+func PostEmployeeData(w http.ResponseWriter, r *http.Request) {
+	var emp Employee
+	w.Header().Set("Content-Type", "application/json")
+	req, _ := ioutil.ReadAll(r.Body)
+	_ = json.Unmarshal(req, &emp)
+	_, err := DB.Exec("insert into emp values (uuid(),?,?,?)", emp.Name, emp.Dept.DeptID, emp.PhoneNo)
+	if err != nil {
+		log.Println(err)
+	}
+	w.WriteHeader(http.StatusCreated)
+
+}
+func PostDepartmentData(w http.ResponseWriter, r *http.Request) {
+	var dep Department
+	w.Header().Set("Content-Type", "application/json")
+	req, _ := ioutil.ReadAll(r.Body)
+	_ = json.Unmarshal(req, &dep)
+	_, err := DB.Exec("insert into dept values (uuid(),?)", dep.DeptName)
+	if err != nil {
+		log.Println(err)
+	}
+	w.WriteHeader(http.StatusCreated)
+
+}
+func GetDeptData(db *sql.DB) ([]Department, error) {
+	rows, err := db.Query("Select * from dept")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var departments []Department
+	for rows.Next() {
+		var d Department
+		err = rows.Scan(&d.DeptID, &d.DeptName)
+		if err != nil {
+			return nil, err
+		}
+		departments = append(departments, d)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return departments, nil
+}
+
+func GetDepData(w http.ResponseWriter, r *http.Request) {
+	val, err := GetDeptData(DB)
+	if err != nil {
+		log.Println(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	respBody, err := json.Marshal(val)
+	w.Write(respBody)
 	if err != nil {
 		log.Println(err)
 	}
