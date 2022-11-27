@@ -153,9 +153,9 @@ func TestPostEmployeeData(t *testing.T) {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer DB.Close()
-	mock.ExpectBegin()
+	//mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO emp").WithArgs(sqlmock.AnyArg(), "Aditi Verma", "1fa46d13-6a50-11ed-90d1-64bc589051b4", "6388768118").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
+	//mock.ExpectCommit()
 	tests := []struct {
 		description string
 		input       Employee
@@ -192,6 +192,49 @@ func TestPostEmployeeData(t *testing.T) {
 		//response recorder
 		resRec := httptest.NewRecorder()
 		PostEmployeeData(resRec, req)
+		var actRes Employee
+		_ = json.Unmarshal(resRec.Body.Bytes(), &actRes) //json to go
+		assert.Equal(t, tc.statusCode, resRec.Code)
+		//assert.Equal(t, tc.expRes, actRes)
+	}
+}
+func TestPostDepartmentData(t *testing.T) {
+	DB, mock, err = sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer DB.Close()
+	//	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO dept").WithArgs(sqlmock.AnyArg(), "New Department").WillReturnResult(sqlmock.NewResult(1, 1))
+	//	mock.ExpectCommit()
+	tests := []struct {
+		description string
+		input       Department
+		expRes      Department
+		statusCode  int
+	}{
+		{"All entries are present",
+			Department{
+				"",
+				"New Department",
+			},
+			Department{
+				"",
+				"New Department",
+			},
+			201,
+		},
+	}
+
+	for _, tc := range tests {
+		val, _ := json.Marshal(tc.input) //go to json
+		req, err := http.NewRequest("POST", "/postdepdata", bytes.NewReader(val))
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+		//response recorder
+		resRec := httptest.NewRecorder()
+		PostDepartmentData(resRec, req)
 		var actRes Employee
 		_ = json.Unmarshal(resRec.Body.Bytes(), &actRes) //json to go
 		assert.Equal(t, tc.statusCode, resRec.Code)
